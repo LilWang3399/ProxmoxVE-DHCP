@@ -1,0 +1,25 @@
+# 在PVE宿主机操作：
+
+# 1. 创建定时任务配置文件
+sudo tee /etc/cron.d/pve_autochange_ip <<'CRON_CONFIG'
+# 每天凌晨2点执行（需修改路径和VM_ID）
+0 2 * * * root /path/to/change_vm_ip.sh VM_ID=100 >/var/log/pve_ipchange.log 2>&1
+
+# 每30分钟执行一次（测试用）
+*/30 * * * * root /path/to/change_vm_ip.sh VM_ID=101
+CRON_CONFIG
+
+# 2. 设置日志轮转
+sudo tee /etc/logrotate.d/pve_ipchange <<'LOGROTATE'
+/var/log/pve_ipchange.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+}
+LOGROTATE
+
+# 3. 重启cron服务
+sudo systemctl restart cron
