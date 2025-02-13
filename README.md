@@ -26,8 +26,8 @@
 ### 安装步骤
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/pve-network-automation.git
-cd pve-network-automation
+git clone https://github.com/LilWang3399/ProxmoxVE-DHCP/DHCP.bash
+cd DHCP
 
 # 设置执行权限
 chmod +x change_vm_ip.sh
