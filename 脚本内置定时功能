@@ -1,0 +1,66 @@
+#!/bin/bash
+# 带定时功能的网络配置脚本
+# 版本：4.0
+
+# 配置参数（时间格式：cron表达式）
+SCHEDULE=(
+    "0 3 * * *"     # 每天3点执行
+    "*/15 * * * *"   # 每15分钟执行
+    "none"           # 关闭定时
+)
+
+# 安装为系统服务
+install_as_service() {
+    sudo tee /etc/systemd/system/pve-autochangeip.service <<EOF
+[Unit]
+Description=PVE Auto Change IP Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/watch -n 3600 ${PWD}/$(basename $0)  # 每小时执行
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now pve-autochangeip.service
+}
+
+# 定时执行主逻辑
+main_scheduler() {
+    while true; do
+        next_run=$(date -d "@$(($(date +%s) + 3600))" "+%F %T")  # 默认1小时间隔
+        echo "[$(date '+%F %T')] 开始执行网络变更..."
+        
+        # 调用原脚本功能
+        /path/to/change_vm_ip.sh
+        
+        echo "[$(date '+%F %T')] 操作完成，下次执行时间：$next_run"
+        sleep 3600
+    done
+}
+
+# 使用选择菜单
+PS3='请选择操作模式：'
+options=("立即执行" "安装定时服务" "查看日志" "退出")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "立即执行")
+            /path/to/change_vm_ip.sh
+            ;;
+        "安装定时服务")
+            install_as_service
+            ;;
+        "查看日志")
+            sudo journalctl -u pve-autochangeip.service -f
+            ;;
+        "退出")
+            break
+            ;;
+        *) echo "无效选项";;
+    esac
+done
