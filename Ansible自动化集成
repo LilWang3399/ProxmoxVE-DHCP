@@ -1,0 +1,41 @@
+# pve_ip_scheduler.yml
+---
+- name: PVE定时IP变更系统
+  hosts: pve_hosts
+  vars:
+    cron_jobs:
+      - name: "Daily IP Change"
+        hour: "4"
+        job: "/opt/scripts/change_vm_ip.sh VM_ID={{ vm_id }}"
+        
+      - name: "Test Mode"
+        minute: "*/5"
+        job: "/opt/scripts/change_vm_ip.sh TEST_MODE=1"
+        
+  tasks:
+    - name: 部署配置脚本
+      copy:
+        src: change_vm_ip.sh
+        dest: /opt/scripts/
+        mode: '0755'
+        
+    - name: 配置定时任务
+      cron:
+        name: "{{ item.name }}"
+        user: root
+        job: "{{ item.job }}"
+        minute: "{{ item.minute | default('0') }}"
+        hour: "{{ item.hour | default('*') }}"
+      loop: "{{ cron_jobs }}"
+      
+    - name: 配置日志监控
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: "cron.* /var/log/cron.log"
+      notify: restart rsyslog
+
+  handlers:
+    - name: restart rsyslog
+      service:
+        name: rsyslog
+        state: restarted
